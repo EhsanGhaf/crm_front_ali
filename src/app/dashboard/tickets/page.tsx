@@ -97,7 +97,7 @@ const SortableHeader = ({ title, columnKey, sortConfig, onSort, align = "right" 
 
 const StatusFilterHeader = ({ statusFilter, setStatusFilter }: { statusFilter: string, setStatusFilter: (v: any) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLTableHeaderCellElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -179,7 +179,10 @@ export default function TicketsPage() {
   const [customerResults, setCustomerResults] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  
+  // 🌟 استیت‌های مربوط به کاربر جدید 🌟
   const [isNewCustomerForm, setIsNewCustomerForm] = useState(false);
+  const [isNewCustomerConfirmed, setIsNewCustomerConfirmed] = useState(false); 
   const [newCustomerData, setNewCustomerData] = useState({ firstname: "", lastname: "", mobile: "", national_id: "" });
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | "">("");
@@ -486,11 +489,13 @@ export default function TicketsPage() {
     setCustomerQuery(customer.phone || customer.identifier);
     setShowCustomerDropdown(false);
     setIsNewCustomerForm(false);
+    setIsNewCustomerConfirmed(false); // ریست کردن وضعیت کاربر جدید
   };
 
   const handleTriggerNewCustomerForm = () => {
     setSelectedCustomer(null); 
     setIsNewCustomerForm(true); 
+    setIsNewCustomerConfirmed(false); // اطمینان از باز بودن فرم
     setShowCustomerDropdown(false); 
     
     const isMobile = customerQuery.startsWith("09") && customerQuery.length === 11;
@@ -526,6 +531,7 @@ export default function TicketsPage() {
     setNewTicketFormData({});
     setDynamicFields([]);
     setIsNewCustomerForm(false);
+    setIsNewCustomerConfirmed(false); // 🌟 ریست استیت تایید کاربر جدید
     setNewCustomerData({ firstname: "", lastname: "", mobile: "", national_id: "" });
     setNewTicketEngineData(null);
     setCreatedTicketId(null);
@@ -569,12 +575,9 @@ export default function TicketsPage() {
   };
 
   const handleSubmitNewTicket = async () => {
-    if ((!selectedCustomer && !isNewCustomerForm) || !selectedCategoryId) {
+    // 🌟 شرط اعتبارسنجی را به روز کردیم: یا کاربرِ قدیمی انتخاب شده باشد، یا کاربر جدید تایید شده باشد
+    if ((!selectedCustomer && !isNewCustomerConfirmed) || !selectedCategoryId) {
       toast.error("لطفاً مشتری و موضوع را به درستی مشخص کنید.");
-      return;
-    }
-    if (isNewCustomerForm && !newCustomerData.firstname) {
-      toast.error("نام کاربر جدید الزامی است.");
       return;
     }
 
@@ -657,9 +660,9 @@ export default function TicketsPage() {
       await api.post(`/tickets/${selectedTicket.id}/assign/`);
       toast.success("تیکت با موفقیت به کارتابل شما اضافه شد.");
 
-      setSelectedTicket(prev => prev ? { ...prev, owner: "شما" } : null);
-      setTicketsList(prevList => 
-        prevList.map(t => 
+      setSelectedTicket((prev: any) => prev ? { ...prev, owner: "شما" } : null);
+      setTicketsList((prevList: any[]) => 
+        prevList.map((t: any) => 
           t.id === selectedTicket.id ? { ...t, owner: "شما" } : t
         )
       );
@@ -1038,7 +1041,6 @@ export default function TicketsPage() {
                   <button onClick={() => setSelectedTicket(null)} className="p-2.5 text-muted hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground rounded-full transition-colors bg-background border border-surface-border"><X size={20} strokeWidth={2.5} /></button>
                 </div>
                 
-                {/* 🌟 پیام‌ها و پیش‌نمایش فرم (استفاده از کامپوننت DynamicField) 🌟 */}
                 <div className="flex-1 overflow-y-auto p-8 bg-background flex flex-col gap-8 custom-scrollbar">
                   
                   {isLoadingFormData ? (
@@ -1053,11 +1055,9 @@ export default function TicketsPage() {
                           <div key={idx} className={`flex flex-col gap-2 p-4 rounded-xl border border-surface-border ${item.field_type === 'textarea' ? 'md:col-span-2' : 'bg-background/50'}`}>
                              <span className="text-xs font-bold text-primary">{item.label}</span>
                              <div className="opacity-90">
-                               {/* 🌟 استفاده از DynamicField برای نمایش یکپارچه 🌟 */}
                                <DynamicField 
                                  field={{ 
                                    field_type: item.field_type,
-                                   // در صورتی که بک‌اِند گزینه‌ها را برنگرداند، مقادیر انتخاب‌شده را به عنوان گزینه پیش‌فرض پاس می‌دهیم تا رندر شوند
                                    options: item.options || item.value 
                                  }} 
                                  value={item.value} 
@@ -1327,11 +1327,11 @@ export default function TicketsPage() {
                             )}
                           </AnimatePresence>
                         </div>
-                      ) : (
+                      ) : !isNewCustomerConfirmed ? (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="bg-blue-50/20 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/40 rounded-2xl p-5 space-y-4 overflow-hidden">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-bold text-primary">ثبت پروفایل کاربری جدید در زمد</span>
-                            <button onClick={() => {setIsNewCustomerForm(false); setSelectedCustomer(null);}} className="text-xs text-rose-500 hover:underline">انصراف</button>
+                            <button onClick={() => {setIsNewCustomerForm(false); setSelectedCustomer(null); setIsNewCustomerConfirmed(false);}} className="text-xs text-rose-500 hover:underline">انصراف</button>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -1350,6 +1350,40 @@ export default function TicketsPage() {
                               <label className="text-xs font-bold text-muted mb-1 block">کد ملی</label>
                               <Input value={newCustomerData.national_id} onChange={e => setNewCustomerData({...newCustomerData, national_id: e.target.value})} className="bg-surface border-surface-border text-foreground h-10" dir="ltr" />
                             </div>
+                          </div>
+                          <div className="flex justify-end mt-2 pt-4 border-t border-blue-100 dark:border-blue-900/40">
+                            <button 
+                              onClick={() => {
+                                if (!newCustomerData.firstname.trim()) {
+                                  toast.error("نام کاربر جدید الزامی است.");
+                                  return;
+                                }
+                                setIsNewCustomerConfirmed(true);
+                              }}
+                              className="bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-lg hover:bg-primary-hover transition-colors shadow-sm"
+                            >
+                              تایید و ادامه
+                            </button>
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="overflow-hidden">
+                          <div className="mt-2 p-4 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-xl flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center"><User size={20} /></div>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                                  کاربر جدید (در انتظار ثبت): {newCustomerData.firstname} {newCustomerData.lastname}
+                                </span>
+                                <span className="text-xs font-medium text-emerald-600/80 mt-0.5 font-mono">{newCustomerData.mobile || newCustomerData.national_id || "بدون شناسه"}</span>
+                              </div>
+                            </div>
+                            <button 
+                              onClick={() => setIsNewCustomerConfirmed(false)}
+                              className="text-xs font-bold px-3 py-1.5 bg-surface text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-colors"
+                            >
+                              ویرایش
+                            </button>
                           </div>
                         </motion.div>
                       )}
@@ -1409,7 +1443,7 @@ export default function TicketsPage() {
                     </div>
 
                     {/* مرحله دوم: موضوع */}
-                    <div className={`bg-surface p-6 rounded-[1.5rem] border ${!selectedCustomer ? 'opacity-50 pointer-events-none' : 'border-surface-border'} shadow-sm space-y-4 relative z-20 transition-all`}>
+                    <div className={`bg-surface p-6 rounded-[1.5rem] border ${(!selectedCustomer && !isNewCustomerConfirmed) ? 'opacity-50 pointer-events-none' : 'border-surface-border'} shadow-sm space-y-4 relative z-20 transition-all`}>
                       <h3 className="font-bold text-foreground flex items-center gap-2"><Layers size={18} className="text-primary" /> ۲. ساختار درخت موضوعی درخواست</h3>
                       <div className="relative">
                         <label className="text-xs font-bold text-muted mb-2 block">انتخاب دسته موضوعی درخت دانش <span className="text-rose-500">*</span></label>
@@ -1473,7 +1507,7 @@ export default function TicketsPage() {
               {!newTicketEngineData && (
                 <div className="p-6 border-t border-surface-border bg-surface shrink-0 flex gap-3">
                   <button onClick={handleCloseCreateModal} className="flex-1 h-12 rounded-xl text-muted font-bold border border-surface-border bg-surface hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">انصراف</button>
-                  <button onClick={handleSubmitNewTicket} disabled={isSubmitting || (!selectedCustomer && !isNewCustomerForm) || !selectedCategoryId} className="w-2/3 h-12 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold shadow-md shadow-primary/20 transition-all flex items-center justify-center gap-2">
+                  <button onClick={handleSubmitNewTicket} disabled={isSubmitting || (!selectedCustomer && !isNewCustomerConfirmed) || !selectedCategoryId} className="w-2/3 h-12 rounded-xl bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold shadow-md shadow-primary/20 transition-all flex items-center justify-center gap-2">
                     {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <><GitMerge size={18} /> ثبت و مشاهده اقدام فرآیند</>}
                   </button>
                 </div>

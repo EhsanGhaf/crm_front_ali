@@ -16,4 +16,9 @@ export interface TreeNode {
   guideline: string | null;
   form_schema: FormField[] | null;
   children: TreeNode[] | null;
+  tags?: string[];
+  workflow?: number | null;
+  workflow_name?: string | null;
+  form_id?: number | null;
+  zammad_group?: string | null;
 }

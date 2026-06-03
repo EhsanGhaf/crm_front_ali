@@ -90,9 +90,8 @@ export default function UsersManagementPage() {
     if (!editingUser) return;
     setIsUpdating(true);
     try {
-      const payload = { ...editFormData };
-      if (!payload.password) delete payload.password;
-
+      const { password, ...restData } = editFormData;
+      const payload = password.trim() ? editFormData : restData;
       await api.patch(`/accounts/users/${editingUser.id}/`, payload);
       toast.success("اطلاعات کاربر با موفقیت به‌روزرسانی شد.");
       setEditingUser(null);

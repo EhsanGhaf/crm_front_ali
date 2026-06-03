@@ -408,10 +408,10 @@ export default function KnowledgeViewerPage() {
                     <h2 className="text-2xl md:text-3xl font-black text-foreground leading-tight">{selectedNode.name}</h2>
 
                     {/* 🌟 بخش جدید: نمایش تگ‌های گزارش‌گیری 🌟 */}
-                    {selectedNode.report_tags && (
+                    {selectedNode.tags && selectedNode.tags.length > 0 && (
                       <div className="mt-4 flex flex-wrap items-center gap-2">
                         <Tags size={16} className="text-muted mr-1" />
-                        {selectedNode.report_tags.split(',').filter(Boolean).map((tag: string, i: number) => (
+                        {selectedNode.tags.map((tag: string, i: number) => (
                           <span key={i} className="inline-flex items-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-md text-xs font-bold border border-surface-border shadow-sm">
                             {tag.trim()}
                           </span>
